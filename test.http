@@ -1,0 +1,371 @@
+# =============================================================================
+# Requêtes de test de l'API (extension VS Code "httpyac")
+#
+# Avant de commencer :
+#   1. npm run seed   (crée le compte admin : admin@example.com / Admin1234)
+#   2. npm run dev
+#
+# Enchaînement automatique :
+#   - "# @name login" donne un nom à la requête ; sa réponse JSON est ensuite
+#     lisible avec {{login.data.token}}.
+#   - "# @ref login" envoie d'abord la requête "login" si elle ne l'a pas encore
+#     été pendant la session. Inutile donc de lancer les requêtes dans l'ordre,
+#     et aucun token n'est à copier-coller dans ce fichier.
+# =============================================================================
+
+@baseUrl = http://localhost:3010
+###
+# =============================================================================
+# AUTHENTIFICATION
+# =============================================================================
+# Inscription de johndoe (201, puis 400 si le compte existe déjà)
+# @name register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "Password123!"
+}
+###
+# Inscription avec un email déjà utilisé (400)
+# @ref register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "janedoe",
+  "email": "john@example.com",
+  "password": "Password123!"
+}
+###
+# Connexion de johndoe (200) : fournit {{login.data.token}}
+# @name login
+# @ref register
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "Password123!"
+}
+
+HTTP/1.1 200  - OK
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+strict-transport-security: max-age=15552000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-xss-protection: 0
+access-control-allow-origin: *
+x-ratelimit-limit: 100
+x-ratelimit-remaining: 92
+date: Thu, 12 Nov 2026 14:21:14 GMT
+x-ratelimit-reset: 1794493903
+content-type: application/json; charset=utf-8
+content-length: 328
+etag: W/"148-tRrnjLaaYIpOpwx2kP5z6+FZWKU"
+connection: close
+###
+# Connexion avec un mauvais mot de passe (401)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "WrongPassword1"
+}
+###
+# Connexion de l'administrateur (200) : fournit {{adminLogin.data.token}}
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin1234"
+}
+###
+# =============================================================================
+# PROFIL UTILISATEUR
+# =============================================================================
+# Récupérer son profil (200)
+# @ref login
+GET {{baseUrl}}/api/users/profile
+Authorization: Bearer {{login.data.token}}
+
+HTTP/1.1 200  - OK
+content-security-policy: default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+origin-agent-cluster: ?1
+referrer-policy: no-referrer
+strict-transport-security: max-age=15552000; includeSubDomains
+x-content-type-options: nosniff
+x-dns-prefetch-control: off
+x-download-options: noopen
+x-frame-options: SAMEORIGIN
+x-permitted-cross-domain-policies: none
+x-xss-protection: 0
+access-control-allow-origin: *
+x-ratelimit-limit: 100
+x-ratelimit-remaining: 90
+date: Thu, 12 Nov 2026 14:21:25 GMT
+x-ratelimit-reset: 1794493903
+content-type: application/json; charset=utf-8
+content-length: 147
+etag: W/"93-gMISivg1f6eqA4u5lGuoAYbrMYs"
+connection: close
+###
+# Modifier son nom d'utilisateur (200)
+# @ref login
+PUT {{baseUrl}}/api/users/profile
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "username": "johndoe_updated"
+}
+###
+# Modifier son profil sans aucun champ (400)
+# @ref login
+PUT {{baseUrl}}/api/users/profile
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{}
+###
+# Prendre l'email d'un autre compte (400)
+# @ref login
+PUT {{baseUrl}}/api/users/profile
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "email": "admin@example.com"
+}
+###
+# Changer le mot de passe (200)
+# Ensuite, la connexion "login" échouera : relancer npm run seed pour repartir de zéro.
+# @ref login
+PUT {{baseUrl}}/api/users/change-password
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Password123!",
+  "newPassword": "NewPassword456!",
+  "confirmPassword": "NewPassword456!"
+}
+###
+# Ancien mot de passe incorrect (400)
+# @ref login
+PUT {{baseUrl}}/api/users/change-password
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "WrongPassword1",
+  "newPassword": "NewPassword456!",
+  "confirmPassword": "NewPassword456!"
+}
+###
+# Nouveau mot de passe identique à l'ancien (400)
+# @ref login
+PUT {{baseUrl}}/api/users/change-password
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Password123!",
+  "newPassword": "Password123!",
+  "confirmPassword": "Password123!"
+}
+###
+# Confirmation différente du nouveau mot de passe (400)
+# @ref login
+PUT {{baseUrl}}/api/users/change-password
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Password123!",
+  "newPassword": "NewPassword456!",
+  "confirmPassword": "Autre789!"
+}
+###
+# =============================================================================
+# TODOS
+# =============================================================================
+# Créer une todo (201) : fournit {{createTodo.data.id}}
+# @name createTodo
+# @ref login
+POST {{baseUrl}}/api/todos
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "title": "Faire les courses"
+}
+###
+# Créer une todo sans titre (400)
+# @ref login
+POST {{baseUrl}}/api/todos
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "title": "   "
+}
+###
+# Lister ses todos (200)
+# @ref login
+GET {{baseUrl}}/api/todos
+Authorization: Bearer {{login.data.token}}
+###
+# Lister seulement les todos terminées (200)
+# @ref login
+GET {{baseUrl}}/api/todos?completed=true
+Authorization: Bearer {{login.data.token}}
+###
+# Filtre invalide (400)
+# @ref login
+GET {{baseUrl}}/api/todos?completed=peut-etre
+Authorization: Bearer {{login.data.token}}
+###
+# Obtenir la todo créée (200)
+# @ref login
+# @ref createTodo
+GET {{baseUrl}}/api/todos/{{createTodo.data.id}}
+Authorization: Bearer {{login.data.token}}
+###
+# Marquer la todo comme terminée (200)
+# @ref login
+# @ref createTodo
+PUT {{baseUrl}}/api/todos/{{createTodo.data.id}}
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{
+  "completed": true
+}
+###
+# Modifier la todo sans aucun champ (400)
+# @ref login
+# @ref createTodo
+PUT {{baseUrl}}/api/todos/{{createTodo.data.id}}
+Authorization: Bearer {{login.data.token}}
+Content-Type: application/json
+
+{}
+###
+# Accéder à la todo d'un autre utilisateur (404)
+# @ref adminLogin
+# @ref createTodo
+GET {{baseUrl}}/api/todos/{{createTodo.data.id}}
+Authorization: Bearer {{adminLogin.data.token}}
+###
+# Supprimer toutes ses todos terminées (200)
+# @ref login
+DELETE {{baseUrl}}/api/todos/completed
+Authorization: Bearer {{login.data.token}}
+###
+# Supprimer la todo créée (200, puis 404 si on la relance)
+# Pour retravailler sur une todo, renvoyer la requête "createTodo".
+# @ref login
+# @ref createTodo
+DELETE {{baseUrl}}/api/todos/{{createTodo.data.id}}
+Authorization: Bearer {{login.data.token}}
+###
+# =============================================================================
+# GESTION DES UTILISATEURS (admin)
+# =============================================================================
+# Liste des utilisateurs (200)
+# @ref adminLogin
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{adminLogin.data.token}}
+###
+# Pagination : page 2, 5 par page (200)
+# @ref adminLogin
+GET {{baseUrl}}/api/users?page=2&limit=5
+Authorization: Bearer {{adminLogin.data.token}}
+###
+# Tri par nom d'utilisateur, de A à Z (200)
+# @ref adminLogin
+GET {{baseUrl}}/api/users?sort=username&order=asc
+Authorization: Bearer {{adminLogin.data.token}}
+###
+# Tri sur une colonne interdite (400)
+# @ref adminLogin
+GET {{baseUrl}}/api/users?sort=password
+Authorization: Bearer {{adminLogin.data.token}}
+###
+# Limite hors bornes (400)
+# @ref adminLogin
+GET {{baseUrl}}/api/users?limit=1000
+Authorization: Bearer {{adminLogin.data.token}}
+###
+# =============================================================================
+# ERREURS D'ACCÈS
+# =============================================================================
+# Sans token (401)
+GET {{baseUrl}}/api/users/profile
+###
+# Token invalide (401)
+GET {{baseUrl}}/api/users/profile
+Authorization: Bearer token-invalide
+###
+# Liste des utilisateurs avec un compte non admin (403)
+# @ref login
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{login.data.token}}
+###
+# =============================================================================
+# VALIDATION DES DONNÉES
+# =============================================================================
+# Email invalide (400)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "invalid-email",
+  "password": "Password123!"
+}
+###
+# Mot de passe trop court (400)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "Short1"
+}
+###
+# Nom d'utilisateur invalide (400)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "test user!",
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+###
+# Champ qui n'est pas une chaîne (400)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": ["testuser"],
+  "email": "test@example.com",
+  "password": "Password123!"
+}

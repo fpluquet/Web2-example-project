@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Connexion · Tâches</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+    <div class="auth">
+        <div class="auth-brand">
+            <span class="logo" aria-hidden="true"></span>
+            <span>Tâches</span>
+        </div>
+
+        <section class="auth-card">
+            <h1>Bon retour</h1>
+            <p class="subtitle">Connectez-vous pour retrouver vos tâches.</p>
+            <div class="alert" id="loginMessage" role="alert" hidden></div>
+            <form id="loginForm" novalidate>
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" id="email" autocomplete="email" placeholder="vous@exemple.com" required autofocus>
+                </label>
+                <label class="field">
+                    <span>Mot de passe</span>
+                    <input type="password" id="password" autocomplete="current-password" required>
+                </label>
+                <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+            </form>
+            <p class="switch">Pas encore de compte ? <a href="/auth/register.html">Créer un compte</a></p>
+        </section>
+    </div>
+
+    <script type="module" src="/auth/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Utilisateurs · Tâches</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+    <!-- Masqué tant que la session n'est pas vérifiée (voir session.js). -->
+    <div class="app" id="appView" hidden>
+
+        <!-- Barre du haut (identique sur toutes les pages connectées) -->
+        <header class="topbar">
+            <a href="/app/todos.html" class="brand">
+                <span class="logo" aria-hidden="true"></span>
+                <span>Tâches</span>
+            </a>
+            <div class="menu" id="userMenu">
+                <button type="button" class="avatar-btn" id="menuButton" aria-haspopup="menu" aria-expanded="false" aria-controls="menuPanel">
+                    <span class="avatar" id="menuAvatar" aria-hidden="true"></span>
+                    <span class="sr-only">Ouvrir le menu du compte</span>
+                </button>
+                <div class="menu-panel" id="menuPanel" role="menu" hidden>
+                    <div class="menu-header">
+                        <strong id="menuUsername"></strong>
+                        <span id="menuEmail"></span>
+                    </div>
+                    <a href="/app/todos.html" class="menu-item" role="menuitem">Mes tâches</a>
+                    <a href="/app/preferences.html" class="menu-item" role="menuitem">Préférences</a>
+                    <a href="/app/admin.html" class="menu-item" role="menuitem" id="menuAdmin" hidden>Utilisateurs</a>
+                    <div class="menu-sep" role="separator"></div>
+                    <button type="button" class="menu-item danger" role="menuitem" id="logoutBtn">Se déconnecter</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="page page-wide">
+            <div class="page-head">
+                <h1>Utilisateurs</h1>
+                <p class="subtitle" id="pageInfo"></p>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <!-- Cliquer sur un en-tête trie la liste (tri fait par l'API, sur toutes les pages) -->
+                        <tr>
+                            <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="username">Nom<span class="sort-icon" aria-hidden="true"></span></button></th>
+                            <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="email">Email<span class="sort-icon" aria-hidden="true"></span></button></th>
+                            <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="role">Rôle<span class="sort-icon" aria-hidden="true"></span></button></th>
+                            <th scope="col" aria-sort="descending"><button type="button" class="th-sort" data-sort="createdAt">Inscrit le<span class="sort-icon" aria-hidden="true"></span></button></th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+            <div class="pager">
+                <button type="button" class="btn btn-ghost" id="prevPage">Précédent</button>
+                <button type="button" class="btn btn-ghost" id="nextPage">Suivant</button>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/app/admin.js"></script>
+</body>
+</html>

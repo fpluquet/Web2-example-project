@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Mes tâches · Tâches</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+    <!-- Masqué tant que la session n'est pas vérifiée (voir session.js). -->
+    <div class="app" id="appView" hidden>
+
+        <!-- Barre du haut (identique sur toutes les pages connectées) -->
+        <header class="topbar">
+            <a href="/app/todos.html" class="brand">
+                <span class="logo" aria-hidden="true"></span>
+                <span>Tâches</span>
+            </a>
+            <div class="menu" id="userMenu">
+                <button type="button" class="avatar-btn" id="menuButton" aria-haspopup="menu" aria-expanded="false" aria-controls="menuPanel">
+                    <span class="avatar" id="menuAvatar" aria-hidden="true"></span>
+                    <span class="sr-only">Ouvrir le menu du compte</span>
+                </button>
+                <div class="menu-panel" id="menuPanel" role="menu" hidden>
+                    <div class="menu-header">
+                        <strong id="menuUsername"></strong>
+                        <span id="menuEmail"></span>
+                    </div>
+                    <a href="/app/todos.html" class="menu-item" role="menuitem">Mes tâches</a>
+                    <a href="/app/preferences.html" class="menu-item" role="menuitem">Préférences</a>
+                    <a href="/app/admin.html" class="menu-item" role="menuitem" id="menuAdmin" hidden>Utilisateurs</a>
+                    <div class="menu-sep" role="separator"></div>
+                    <button type="button" class="menu-item danger" role="menuitem" id="logoutBtn">Se déconnecter</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="page">
+            <div class="page-head">
+                <h1>Mes tâches</h1>
+                <p class="subtitle" id="todoCount"></p>
+            </div>
+
+            <form id="todoForm" class="composer" novalidate>
+                <input type="text" id="todoTitle" placeholder="Ajouter une tâche…" maxlength="200" autocomplete="off" aria-label="Nouvelle tâche">
+                <button type="submit" class="btn btn-primary">Ajouter</button>
+            </form>
+
+            <div class="toolbar">
+                <div class="segmented" role="group" aria-label="Filtrer les tâches">
+                    <button type="button" class="seg active" data-filter="all">Toutes</button>
+                    <button type="button" class="seg" data-filter="active">À faire</button>
+                    <button type="button" class="seg" data-filter="done">Terminées</button>
+                </div>
+                <button type="button" class="btn-link" id="clearCompleted" hidden>Effacer les terminées</button>
+            </div>
+
+            <ul class="todo-list" id="todoList"></ul>
+            <div class="empty" id="todoEmpty" hidden>
+                <p class="empty-title" id="todoEmptyTitle"></p>
+                <p class="empty-text" id="todoEmptyText"></p>
+            </div>
+            <p class="footnote">Double-cliquez sur une tâche pour la renommer.</p>
+        </main>
+    </div>
+
+    <script type="module" src="/app/todos.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Inscription · Tâches</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+    <div class="auth">
+        <div class="auth-brand">
+            <span class="logo" aria-hidden="true"></span>
+            <span>Tâches</span>
+        </div>
+
+        <section class="auth-card">
+            <h1>Créer un compte</h1>
+            <p class="subtitle">Quelques secondes suffisent.</p>
+            <div class="alert" id="registerMessage" role="alert" hidden></div>
+            <form id="registerForm" novalidate>
+                <label class="field">
+                    <span>Nom d'utilisateur</span>
+                    <input type="text" id="regUsername" autocomplete="username" placeholder="johndoe" required autofocus>
+                </label>
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" id="regEmail" autocomplete="email" placeholder="vous@exemple.com" required>
+                </label>
+                <label class="field">
+                    <span>Mot de passe</span>
+                    <input type="password" id="regPassword" autocomplete="new-password" required>
+                    <small>8 caractères minimum, avec une minuscule, une majuscule et un chiffre.</small>
+                </label>
+                <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
+            </form>
+            <p class="switch">Déjà un compte ? <a href="/auth/login.html">Se connecter</a></p>
+        </section>
+    </div>
+
+    <script type="module" src="/auth/register.js"></script>
+</body>
+</html>
