@@ -13,7 +13,7 @@
 #     et aucun token n'est à copier-coller dans ce fichier.
 # =============================================================================
 
-@baseUrl = http://localhost:3010
+@baseUrl = http://localhost:3000
 ###
 # =============================================================================
 # AUTHENTIFICATION
@@ -66,12 +66,12 @@ x-permitted-cross-domain-policies: none
 x-xss-protection: 0
 access-control-allow-origin: *
 x-ratelimit-limit: 100
-x-ratelimit-remaining: 92
-date: Thu, 12 Nov 2026 14:21:14 GMT
+x-ratelimit-remaining: 86
+date: Thu, 12 Nov 2026 14:22:49 GMT
 x-ratelimit-reset: 1794493903
 content-type: application/json; charset=utf-8
 content-length: 328
-etag: W/"148-tRrnjLaaYIpOpwx2kP5z6+FZWKU"
+etag: W/"148-TMkIbl4qZzW6sM5yF3hzi/NGWEA"
 connection: close
 ###
 # Connexion avec un mauvais mot de passe (401)
