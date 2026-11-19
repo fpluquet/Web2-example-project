@@ -1,0 +1,792 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Anatomie de l'API Tâches</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/* Layout : une nuit de plan d'architecte. Trois couches = trois teintes (client ciel, serveur ambre, données lavande),
+   un seul grand schéma SVG empilé de haut en bas, des parcours à rejouer au-dessus. Look sombre assumé (thème unique). */
+:root {
+  --bg: #0a0e1a;
+  --panel: #10162a;
+  --panel-2: #141b33;
+  --fg: #e9edf7;
+  --fg2: #c3cbe0;
+  --muted: #8a94ae;
+  --faint: #566079;
+  --line: #222b47;
+  --cli: #63c8f2;
+  --srv: #f3b45f;
+  --dat: #b49dff;
+  --grid: rgba(130, 150, 210, 0.075);
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --sans: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(1200px 600px at 12% -10%, rgba(99, 200, 242, 0.10), transparent 60%),
+    radial-gradient(900px 700px at 100% 40%, rgba(243, 180, 95, 0.07), transparent 60%),
+    radial-gradient(900px 600px at 20% 110%, rgba(180, 157, 255, 0.09), transparent 60%),
+    radial-gradient(var(--grid) 1px, transparent 1px);
+  background-size: auto, auto, auto, 22px 22px;
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 1260px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 48px 64px;
+  display: grid;
+  gap: 32px;
+}
+
+/* ---------- En-tête ---------- */
+header { display: grid; gap: 14px; }
+.eyebrow {
+  font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+h1 {
+  margin: 0; font-family: var(--display); font-weight: 800; letter-spacing: -0.02em;
+  font-size: clamp(36px, 6vw, 68px); line-height: 1.02; text-wrap: balance;
+}
+h1 .grad {
+  background: linear-gradient(100deg, var(--cli) 0%, var(--srv) 55%, var(--dat) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.lede { margin: 0; max-width: 64ch; color: var(--fg2); font-size: 17px; }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.stack span {
+  font-family: var(--mono); font-size: 12px; color: var(--fg2);
+  padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(16, 22, 42, .7);
+}
+
+/* ---------- Parcours ---------- */
+.tour {
+  display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px;
+  padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: rgba(16, 22, 42, .78);
+}
+@media (max-width: 760px) { .tour { grid-template-columns: minmax(0, 1fr); } }
+.tour h2 { margin: 0 0 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.paths { display: grid; gap: 6px; }
+.paths button {
+  appearance: none; text-align: left; cursor: pointer;
+  font: 500 14px var(--sans); color: var(--fg2);
+  padding: 9px 12px; border-radius: 10px; border: 1px solid transparent; background: transparent;
+  display: flex; align-items: center; gap: 10px;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.paths button::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%; flex: none;
+  background: var(--faint); transition: background .2s, box-shadow .2s;
+}
+.paths button:hover { background: var(--panel-2); color: var(--fg); }
+.paths button[aria-pressed="true"] { background: var(--panel-2); border-color: #2c3760; color: var(--fg); }
+.paths button[aria-pressed="true"]::before { background: var(--srv); box-shadow: 0 0 10px var(--srv); }
+.paths button:focus-visible { outline: 2px solid var(--cli); outline-offset: 2px; }
+.steps { min-width: 0; }
+.steps ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.steps li { animation: rise .35s both; }
+.step {
+  appearance: none; width: 100%; text-align: left; font: inherit; color: var(--fg2);
+  background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 6px 8px;
+  display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: baseline;
+  transition: background .2s, border-color .2s, opacity .2s, color .2s;
+}
+button.step { cursor: pointer; }
+button.step:hover { background: var(--panel-2); color: var(--fg); }
+button.step:focus-visible { outline: 2px solid var(--cli); outline-offset: 1px; }
+.step .n {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--bg);
+  background: var(--srv); border-radius: 6px; text-align: center; line-height: 20px; height: 20px;
+  transition: box-shadow .2s, background .2s;
+}
+.step[aria-pressed="true"] { background: var(--panel-2); border-color: #2c3760; color: var(--fg); }
+.step[aria-pressed="true"] .n { background: var(--cli); box-shadow: 0 0 12px var(--cli); }
+.steps.solo .step[aria-pressed="false"] { opacity: .5; }
+.steps .txt { max-width: 70ch; }
+.hint { margin: -4px 0 10px; font-size: 12.5px; color: var(--faint); }
+
+/* ---------- Barre fixe des parcours ---------- */
+.dock {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: rgba(10, 14, 26, .84);
+  -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  transform: translateY(-110%); transition: transform .3s ease;
+}
+.dock.show { transform: none; }
+.dock-in {
+  max-width: 1260px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+}
+.dock select {
+  font: 500 14px var(--sans); color: var(--fg); background: var(--panel-2);
+  border: 1px solid #2c3760; border-radius: 10px; padding: 7px 10px; max-width: 100%; cursor: pointer;
+}
+.dock-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.dock-steps button {
+  appearance: none; min-width: 30px; height: 30px; padding: 0 9px; cursor: pointer;
+  border-radius: 8px; border: 1px solid var(--line); background: transparent;
+  color: var(--fg2); font: 600 12px var(--mono);
+  transition: background .2s, color .2s, box-shadow .2s, border-color .2s;
+}
+.dock-steps button:hover { background: var(--panel-2); color: var(--fg); }
+.dock-steps button[aria-pressed="true"] { background: var(--cli); border-color: var(--cli); color: var(--bg); box-shadow: 0 0 12px rgba(99, 200, 242, .6); }
+.dock-steps .nav { color: var(--fg); font-size: 14px; }
+.dock select:focus-visible, .dock-steps button:focus-visible { outline: 2px solid var(--cli); outline-offset: 2px; }
+.dock-text {
+  flex: 1 1 280px; min-width: 0; color: var(--fg2); font-size: 13.5px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.dock-text strong { color: var(--fg); font-weight: 600; }
+.dock-text code { font-family: var(--mono); font-size: .88em; color: var(--fg); background: rgba(255,255,255,.05); padding: 1px 5px; border-radius: 5px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .dock { transition: none; } }
+.steps code, .take code { font-family: var(--mono); font-size: .88em; color: var(--fg); background: rgba(255,255,255,.05); padding: 1px 5px; border-radius: 5px; }
+@keyframes rise { from { opacity: .2; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Schéma ---------- */
+figure { margin: 0; display: grid; gap: 14px; }
+.stage {
+  overflow-x: auto; border-radius: 22px; border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(16, 22, 42, .55), rgba(10, 14, 26, .55));
+}
+.stage svg { display: block; width: 100%; min-width: 1000px; height: auto; }
+figcaption { color: var(--muted); font-size: 14px; max-width: 80ch; }
+
+/* textes SVG */
+.bandk { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: .18em; fill: var(--c); }
+.bands { font-family: var(--sans); font-size: 12.5px; fill: var(--muted); }
+.cap { font-family: var(--sans); font-size: 11.5px; fill: var(--faint); font-style: italic; }
+.nm { font-family: var(--mono); font-size: 13px; font-weight: 600; fill: var(--fg); }
+.sb { font-family: var(--sans); font-size: 11px; fill: var(--muted); }
+.ms { font-family: var(--mono); font-size: 11px; fill: var(--fg2); }
+.ttl { font-family: var(--mono); font-size: 14px; font-weight: 700; fill: var(--c); }
+.gl { font-family: var(--display); font-size: 14px; font-weight: 700; fill: var(--fg); text-anchor: end; }
+.gls { font-family: var(--sans); font-size: 10.5px; fill: var(--faint); text-anchor: end; }
+.wl { font-family: var(--mono); font-size: 11px; fill: var(--fg2); }
+.wk { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.al { font-family: var(--sans); font-size: 10px; fill: var(--muted); }
+.pt { font-family: var(--sans); font-size: 11px; font-weight: 600; fill: var(--fg); text-anchor: middle; }
+.pt .code { font-family: var(--mono); font-weight: 700; fill: var(--srv); }
+.ty { font-family: var(--sans); font-size: 10.5px; fill: var(--muted); text-anchor: end; }
+.card { font-family: var(--mono); font-size: 13px; font-weight: 700; fill: var(--dat); }
+
+.cli { --c: var(--cli); }
+.srv { --c: var(--srv); }
+.dat { --c: var(--dat); }
+
+.band { fill: color-mix(in srgb, var(--c) 4%, transparent); stroke: color-mix(in srgb, var(--c) 26%, transparent); stroke-width: 1; }
+.node > .box {
+  fill: color-mix(in srgb, var(--c) 9%, var(--panel));
+  stroke: color-mix(in srgb, var(--c) 48%, transparent);
+  stroke-width: 1.2;
+  transition: stroke .25s, filter .25s;
+}
+.node.store > .box { stroke-dasharray: 4 3; }
+.node:hover > .box { stroke: var(--c); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--c) 55%, transparent)); }
+.tbl-head { fill: color-mix(in srgb, var(--dat) 18%, var(--panel)); }
+
+.wire { fill: none; stroke-width: 1.6; }
+.w-cli { stroke: var(--cli); }
+.w-srv { stroke: var(--srv); }
+.w-mut { stroke: #4a557a; }
+.w-dat { stroke: var(--dat); }
+.w-res { stroke-dasharray: 6 5; animation: march 1.1s linear infinite; }
+.w-dot { stroke-dasharray: 1.5 4.5; stroke-linecap: round; }
+.boundary { stroke: #3a4568; stroke-width: 1; stroke-dasharray: 2 6; }
+@keyframes march { to { stroke-dashoffset: -22; } }
+
+.pk { filter: url(#glow); transition: opacity .3s; }
+.pk-cli { fill: var(--cli); }
+.pk-srv { fill: var(--srv); }
+.pk-dat { fill: var(--dat); }
+
+.hl { transition: opacity .35s ease; }
+svg.focus .hl:not(.on) { opacity: .12; }
+svg.focus .pk { opacity: 0; }
+svg.focus .node.on > .box { stroke: var(--c); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 60%, transparent)); }
+svg.focus .wire.on, svg.focus .on .wire { stroke-width: 2.2; }
+
+/* ---------- Légende & points clés ---------- */
+.legend { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 13px; color: var(--fg2); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; }
+.ln { width: 28px; height: 0; border-top: 2px solid; }
+.take { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .take { grid-template-columns: minmax(0, 1fr); } }
+.take article { padding: 20px; border-top: 2px solid var(--c); background: rgba(16, 22, 42, .6); border-radius: 0 0 14px 14px; min-width: 0; }
+.take h3 { margin: 0 0 8px; font-family: var(--display); font-size: 19px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.take p { margin: 0; color: var(--fg2); font-size: 14.5px; }
+footer { color: var(--faint); font-family: var(--mono); font-size: 11.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pk { display: none; }
+  .w-res { animation: none; }
+  .steps li { animation: none; }
+  .hl { transition: none; }
+}
+</style>
+
+<div class="dock" id="dock" role="region" aria-label="Navigation des parcours" inert>
+  <div class="dock-in">
+    <label class="sr" for="dockPath">Parcours</label>
+    <select id="dockPath"></select>
+    <div class="dock-steps" id="dockSteps"></div>
+    <div class="dock-text" id="dockText" aria-live="polite"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">api-restful-nodejs · schéma d'architecture</div>
+    <h1>Anatomie de l'API <span class="grad">Tâches</span></h1>
+    <p class="lede">Un navigateur sans framework, une API Express découpée en cinq couches, une base SQLite dans le même processus. Choisissez un parcours pour suivre une requête de bout en bout.</p>
+    <div class="stack">
+      <span>Express 4</span><span>node:sqlite</span><span>JWT · 24 h</span><span>bcryptjs</span><span>express-validator</span><span>helmet · cors · rate-limit</span><span>Swagger</span><span>Jest + supertest</span>
+    </div>
+  </header>
+
+  <section class="tour" aria-label="Parcours d'une requête">
+    <div>
+      <h2>Parcours</h2>
+      <div class="paths" id="paths"></div>
+    </div>
+    <div class="steps" aria-live="polite">
+      <h2 id="stepsTitle">Vue d'ensemble</h2>
+      <p class="hint" id="hint" hidden>Cliquez une étape pour l'isoler dans le schéma ; recliquez-la pour revoir tout le parcours.</p>
+      <ol id="steps"></ol>
+    </div>
+  </section>
+
+  <figure>
+    <div class="stage">
+<svg id="arch" viewBox="0 0 1200 1340" role="img" aria-label="Architecture en trois couches : le navigateur appelle l'API Express via fetch et un jeton JWT ; chaque requête traverse la chaîne de middlewares globaux, puis routes, gardes, contrôleurs, services et repositories, jusqu'aux tables SQLite users et todos.">
+  <defs>
+    <marker id="ah-cli" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#63c8f2"/></marker>
+    <marker id="ah-srv" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#f3b45f"/></marker>
+    <marker id="ah-dat" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b49dff"/></marker>
+    <marker id="ah-mut" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5d6890"/></marker>
+    <linearGradient id="g-req" gradientUnits="userSpaceOnUse" x1="0" y1="240" x2="0" y2="496">
+      <stop offset="0" stop-color="#63c8f2"/><stop offset="1" stop-color="#f3b45f"/>
+    </linearGradient>
+    <filter id="glow" x="-200%" y="-200%" width="500%" height="500%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ===================== BANDES ===================== -->
+  <g class="cli"><rect class="band" x="40" y="20" width="1120" height="242" rx="22"/></g>
+  <g class="srv"><rect class="band" x="40" y="444" width="1120" height="588" rx="22"/></g>
+  <g class="dat"><rect class="band" x="40" y="1056" width="1120" height="260" rx="22"/></g>
+
+  <!-- libellés de bande -->
+  <g class="cli"><text class="bandk" x="64" y="54">CLIENT</text></g>
+  <text class="bands" x="176" y="54">navigateur · public/ · HTML et modules ES, sans framework</text>
+  <text class="cap" x="1136" y="54" text-anchor="end">une page = un .html + son script</text>
+
+  <g class="srv"><text class="bandk" x="64" y="478">SERVEUR</text></g>
+  <text class="bands" x="176" y="478">Express 4 · Node ≥ 22.13 · src/</text>
+  <text class="cap" x="1136" y="478" text-anchor="end">chaque requête traverse la chaîne de gauche à droite</text>
+
+  <g class="dat"><text class="bandk" x="64" y="1090">DONNÉES</text></g>
+  <text class="gls" x="148" y="1160">SQLite</text>
+  <text class="gls" x="148" y="1176">node:sqlite</text>
+  <text class="gls" x="148" y="1192">une connexion</text>
+  <text class="gls" x="148" y="1208">synchrone</text>
+
+  <!-- frontière HTTP -->
+  <line class="boundary" x1="40" y1="424" x2="1160" y2="424"/>
+  <text class="ms" x="1150" y="416" text-anchor="end" style="fill:var(--faint)">frontière HTTP · localhost:3000</text>
+
+  <!-- ===================== CLIENT : liaisons ===================== -->
+  <g class="hl" id="cd-1"><path class="wire w-mut" d="M145,136 V158"/></g>
+  <g class="hl" id="cd-2"><path class="wire w-mut" d="M327,136 V158"/></g>
+  <g class="hl" id="cd-3"><path class="wire w-mut" d="M509,136 V158"/></g>
+  <g class="hl" id="cd-4"><path class="wire w-mut" d="M691,136 V158"/></g>
+  <g class="hl" id="cd-5"><path class="wire w-mut" d="M873,136 V158"/></g>
+  <g class="hl" id="cd-6"><path class="wire w-mut" d="M1055,136 V158"/></g>
+  <g class="hl" id="c-trunk"><path class="wire w-mut" d="M145,158 H1055"/><text class="al" x="560" y="153">import</text></g>
+  <g class="hl" id="md-api"><path class="wire w-mut" d="M432,158 V182" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="md-session"><path class="wire w-mut" d="M750,158 V182" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="md-ui"><path class="wire w-mut" d="M1020,158 V182" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="ca-sess-api"><path class="wire w-cli" d="M620,214 H574" marker-end="url(#ah-cli)"/><text class="al" x="597" y="207" text-anchor="middle">appelle</text></g>
+  <g class="hl" id="ca-api-store"><path class="wire w-cli" d="M292,214 H246" marker-end="url(#ah-cli)"/><text class="al" x="269" y="207" text-anchor="middle">jeton</text></g>
+
+  <!-- ===================== CLIENT : pages ===================== -->
+  <g class="node cli hl" id="pg-index"><rect class="box" x="64" y="84" width="162" height="52" rx="10"/><text class="nm" x="78" y="106">/</text><text class="sb" x="78" y="124">aiguille selon le jeton</text></g>
+  <g class="node cli hl" id="pg-login"><rect class="box" x="246" y="84" width="162" height="52" rx="10"/><text class="nm" x="260" y="106">/auth/login</text><text class="sb" x="260" y="124">connexion</text></g>
+  <g class="node cli hl" id="pg-register"><rect class="box" x="428" y="84" width="162" height="52" rx="10"/><text class="nm" x="442" y="106">/auth/register</text><text class="sb" x="442" y="124">inscription</text></g>
+  <g class="node cli hl" id="pg-todos"><rect class="box" x="610" y="84" width="162" height="52" rx="10"/><text class="nm" x="624" y="106">/app/todos</text><text class="sb" x="624" y="124">mes tâches</text></g>
+  <g class="node cli hl" id="pg-prefs"><rect class="box" x="792" y="84" width="162" height="52" rx="10"/><text class="nm" x="806" y="106">/app/preferences</text><text class="sb" x="806" y="124">profil · mot de passe</text></g>
+  <g class="node cli hl" id="pg-admin"><rect class="box" x="974" y="84" width="162" height="52" rx="10"/><text class="nm" x="988" y="106">/app/admin</text><text class="sb" x="988" y="124">utilisateurs · admin</text></g>
+
+  <!-- CLIENT : modules partagés -->
+  <g class="node cli store hl" id="m-storage"><rect class="box" x="64" y="184" width="180" height="56" rx="10"/><text class="nm" x="78" y="207">localStorage</text><text class="sb" x="78" y="226">authToken = JWT</text></g>
+  <g class="node cli hl" id="m-api"><rect class="box" x="294" y="184" width="278" height="56" rx="10"/><text class="nm" x="308" y="207">api.js</text><text class="sb" x="308" y="226">fetch JSON · en-tête Bearer · ApiError</text></g>
+  <g class="node cli hl" id="m-session"><rect class="box" x="622" y="184" width="258" height="56" rx="10"/><text class="nm" x="636" y="207">session.js</text><text class="sb" x="636" y="226">garde de page · 401 → /auth/login</text></g>
+  <g class="node cli hl" id="m-ui"><rect class="box" x="904" y="184" width="232" height="56" rx="10"/><text class="nm" x="918" y="207">ui.js</text><text class="sb" x="918" y="226">$ · toast · setBusy</text></g>
+
+  <!-- ===================== FIL HTTP ===================== -->
+  <g class="hl" id="w-req">
+    <path id="w-req-p" class="wire" stroke="url(#g-req)" d="M420,240 V330 H140 V494" marker-end="url(#ah-srv)"/>
+    <text class="wk" x="164" y="284" style="fill:var(--cli)">REQUÊTE</text>
+    <text class="wl" x="164" y="300">fetch /api/… · JSON</text>
+    <text class="wl" x="164" y="316">Authorization: Bearer &lt;jwt&gt;</text>
+  </g>
+  <g class="hl" id="w-res">
+    <path id="w-res-p" class="wire w-srv w-res" d="M156,496 V346 H444 V242" marker-end="url(#ah-srv)"/>
+    <text class="wk" x="172" y="366" style="fill:var(--srv)">RÉPONSE</text>
+    <text class="wl" x="172" y="382">{ success: true, data }</text>
+    <text class="wl" x="172" y="398">ou { success: false, message }</text>
+  </g>
+  <g class="hl" id="w-static">
+    <path id="w-static-p" class="wire w-srv" d="M725,496 V264" marker-end="url(#ah-srv)"/>
+    <text class="wl" x="737" y="300">HTML · CSS · JS</text>
+    <text class="sb" x="737" y="316">si le fichier existe dans public/</text>
+  </g>
+  <g class="hl" id="w-swagger">
+    <path class="wire w-srv" d="M893,496 V264" marker-end="url(#ah-srv)"/>
+    <text class="wl" x="905" y="300">Swagger UI</text>
+    <text class="sb" x="905" y="316">doc OpenAPI interactive</text>
+  </g>
+
+  <!-- ===================== SERVEUR : chaîne globale ===================== -->
+  <g class="hl" id="pa-1"><path class="wire w-mut" d="M168,522 H182" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="pa-2"><path class="wire w-mut" d="M278,522 H292" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="pa-3"><path class="wire w-mut" d="M464,522 H478" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="pa-4"><path class="wire w-mut" d="M632,522 H646" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="pa-5"><path class="wire w-mut" d="M800,522 H814" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="pa-6"><path class="wire w-mut" d="M968,522 H982" marker-end="url(#ah-mut)"/></g>
+
+  <g class="node srv hl" id="p-helmet"><rect class="box" x="64" y="496" width="104" height="52" rx="10"/><text class="nm" x="76" y="518">helmet</text><text class="sb" x="76" y="536">en-têtes sécurité</text></g>
+  <g class="node srv hl" id="p-cors"><rect class="box" x="186" y="496" width="92" height="52" rx="10"/><text class="nm" x="198" y="518">cors</text><text class="sb" x="198" y="536">cross-origin</text></g>
+  <g class="node srv hl" id="p-rate"><rect class="box" x="296" y="496" width="168" height="52" rx="10"/><text class="nm" x="308" y="518">express-rate-limit</text><text class="sb" x="308" y="536">100 req · 15 min · par IP</text></g>
+  <g class="node srv hl" id="p-json"><rect class="box" x="482" y="496" width="150" height="52" rx="10"/><text class="nm" x="494" y="518">express.json</text><text class="sb" x="494" y="536">corps JSON ≤ 10 Mo</text></g>
+  <g class="node srv hl" id="p-static"><rect class="box" x="650" y="496" width="150" height="52" rx="10"/><text class="nm" x="662" y="518">express.static</text><text class="sb" x="662" y="536">sert public/</text></g>
+  <g class="node srv hl" id="p-swagger"><rect class="box" x="818" y="496" width="150" height="52" rx="10"/><text class="nm" x="830" y="518">swagger-ui</text><text class="sb" x="830" y="536">/api-docs</text></g>
+  <g class="node srv hl" id="p-router"><rect class="box" x="986" y="496" width="150" height="52" rx="10"/><text class="nm" x="998" y="518">routeurs</text><text class="sb" x="998" y="536">/api/*</text></g>
+
+  <!-- bus vers les routeurs -->
+  <g class="hl" id="bus-trunk"><path class="wire w-srv" d="M1061,548 V572 H769" style="opacity:.75"/><text class="ms" x="908" y="566" style="font-size:10px;fill:var(--muted)">app.use('/api/…', router)</text></g>
+  <g class="hl" id="bus-B"><path class="wire w-srv" d="M769,572 H523" style="opacity:.75"/></g>
+  <g class="hl" id="bus-A"><path class="wire w-srv" d="M523,572 H277" style="opacity:.75"/></g>
+  <g class="hl" id="drop-A"><path class="wire w-srv" d="M277,572 V594" marker-end="url(#ah-srv)"/></g>
+  <g class="hl" id="drop-B"><path class="wire w-srv" d="M523,572 V594" marker-end="url(#ah-srv)"/></g>
+  <g class="hl" id="drop-C"><path class="wire w-srv" d="M769,572 V594" marker-end="url(#ah-srv)"/></g>
+
+  <!-- gouttière : noms des couches -->
+  <text class="gl" x="148" y="638">Routes</text><text class="gls" x="148" y="654">express.Router</text>
+  <text class="gl" x="148" y="742">Gardes</text><text class="gls" x="148" y="758">middlewares</text>
+  <text class="gl" x="148" y="827">Contrôleurs</text><text class="gls" x="148" y="843">HTTP ⇄ métier</text>
+  <text class="gl" x="148" y="903">Services</text><text class="gls" x="148" y="919">règles métier</text>
+  <text class="gl" x="148" y="979">Repositories</text><text class="gls" x="148" y="995">SQL, rien d'autre</text>
+
+  <!-- flèches entre couches -->
+  <g class="hl" id="a-A1"><path class="wire w-mut" d="M277,686 V708" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-A2"><path class="wire w-mut" d="M277,782 V802" marker-end="url(#ah-mut)"/><text class="al" x="285" y="796">next()</text></g>
+  <g class="hl" id="a-A3"><path class="wire w-mut" d="M277,856 V878" marker-end="url(#ah-mut)"/><text class="al" x="285" y="871">appelle</text></g>
+  <g class="hl" id="a-A4"><path class="wire w-mut" d="M277,932 V954" marker-end="url(#ah-mut)"/><text class="al" x="285" y="947">lit · écrit</text></g>
+  <g class="hl" id="a-B1"><path class="wire w-mut" d="M523,686 V708" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-B2"><path class="wire w-mut" d="M523,782 V802" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-B3"><path class="wire w-mut" d="M523,856 V878" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-B4"><path class="wire w-mut" d="M523,932 V954" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-C1"><path class="wire w-mut" d="M769,686 V708" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-C2"><path class="wire w-mut" d="M769,782 V802" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-C3"><path class="wire w-mut" d="M769,856 V878" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="a-C4"><path class="wire w-mut" d="M769,932 V954" marker-end="url(#ah-mut)"/></g>
+
+  <!-- R1 routes -->
+  <g class="node srv hl" id="r-auth"><rect class="box" x="164" y="596" width="226" height="90" rx="12"/>
+    <text class="ttl" x="178" y="620">/api/auth</text>
+    <text class="ms" x="178" y="642">POST /register</text>
+    <text class="ms" x="178" y="658">POST /login</text>
+    <text class="sb" x="178" y="676">public, sans jeton</text></g>
+  <g class="node srv hl" id="r-users"><rect class="box" x="410" y="596" width="226" height="90" rx="12"/>
+    <text class="ttl" x="424" y="620">/api/users</text>
+    <text class="ms" x="424" y="642">GET · PUT /profile</text>
+    <text class="ms" x="424" y="658">PUT /change-password</text>
+    <text class="ms" x="424" y="674">GET /   <tspan style="font-family:var(--sans);fill:var(--muted)">liste, admin seulement</tspan></text></g>
+  <g class="node srv hl" id="r-todos"><rect class="box" x="656" y="596" width="226" height="90" rx="12"/>
+    <text class="ttl" x="670" y="620">/api/todos</text>
+    <text class="ms" x="670" y="642">GET · POST /</text>
+    <text class="ms" x="670" y="658">GET · PUT · DELETE /:id</text>
+    <text class="ms" x="670" y="674">DELETE /completed</text></g>
+
+  <!-- R2 gardes -->
+  <g class="node srv hl" id="g-a-val"><rect class="box" x="225" y="718" width="104" height="24" rx="12"/><text class="pt" x="277" y="734">validation <tspan class="code">400</tspan></text></g>
+  <text class="sb" x="277" y="768" text-anchor="middle">aucune garde JWT</text>
+
+  <g class="node srv hl" id="g-b-jwt"><rect class="box" x="417" y="718" width="106" height="24" rx="12"/><text class="pt" x="470" y="734">auth JWT <tspan class="code">401</tspan></text></g>
+  <g class="node srv hl" id="g-b-val"><rect class="box" x="529" y="718" width="106" height="24" rx="12"/><text class="pt" x="582" y="734">validation <tspan class="code">400</tspan></text></g>
+  <g class="node srv hl" id="g-b-admin"><rect class="box" x="417" y="750" width="106" height="24" rx="12"/><text class="pt" x="470" y="766">admin <tspan class="code">403</tspan></text></g>
+  <text class="sb" x="531" y="766">sur GET / seulement</text>
+
+  <g class="node srv hl" id="g-c-jwt"><rect class="box" x="663" y="718" width="106" height="24" rx="12"/><text class="pt" x="716" y="734">auth JWT <tspan class="code">401</tspan></text></g>
+  <g class="node srv hl" id="g-c-val"><rect class="box" x="775" y="718" width="106" height="24" rx="12"/><text class="pt" x="828" y="734">validation <tspan class="code">400</tspan></text></g>
+  <text class="ms" x="769" y="768" text-anchor="middle" style="font-size:10.5px;fill:var(--muted)">router.use(auth) : tout /todos</text>
+
+  <!-- R3 contrôleurs -->
+  <g class="node srv hl" id="c-auth"><rect class="box" x="164" y="804" width="226" height="52" rx="10"/><text class="nm" x="178" y="826">authController</text><text class="sb" x="178" y="845">register · login</text></g>
+  <g class="node srv hl" id="c-user"><rect class="box" x="410" y="804" width="226" height="52" rx="10"/><text class="nm" x="424" y="826">userController</text><text class="sb" x="424" y="845">profil · mot de passe · liste</text></g>
+  <g class="node srv hl" id="c-todo"><rect class="box" x="656" y="804" width="226" height="52" rx="10"/><text class="nm" x="670" y="826">todoController</text><text class="sb" x="670" y="845">CRUD · filtre ?completed</text></g>
+
+  <!-- R4 services -->
+  <g class="node srv hl" id="s-auth"><rect class="box" x="164" y="880" width="226" height="52" rx="10"/><text class="nm" x="178" y="902">authService</text><text class="sb" x="178" y="921">bcrypt.compare · jwt.sign 24 h</text></g>
+  <g class="node srv hl" id="s-user"><rect class="box" x="410" y="880" width="226" height="52" rx="10"/><text class="nm" x="424" y="902">userService</text><text class="sb" x="424" y="921">profil · changement de mot de passe</text></g>
+  <g class="node srv hl" id="s-todo"><rect class="box" x="656" y="880" width="226" height="52" rx="10"/><text class="nm" x="670" y="902">todoService</text><text class="sb" x="670" y="921">propriétaire vérifié, sinon 404</text></g>
+
+  <!-- R5 repositories -->
+  <g class="node srv hl" id="repo-user"><rect class="box" x="164" y="956" width="472" height="52" rx="10"/><text class="nm" x="178" y="978">UserRepository</text><text class="sb" x="178" y="997">table users · findById, findByEmail, findByUsername, save</text></g>
+  <g class="node srv hl" id="repo-todo"><rect class="box" x="656" y="956" width="226" height="52" rx="10"/><text class="nm" x="670" y="978">TodoRepository</text><text class="sb" x="670" y="997">table todos · CRUD, deleteMany</text></g>
+
+  <!-- colonne transverse -->
+  <g class="node srv hl" id="x-error"><rect class="box" x="920" y="596" width="216" height="90" rx="12"/>
+    <text class="nm" x="934" y="620">errorHandler</text>
+    <text class="sb" x="934" y="640">dernier middleware de app.js</text>
+    <text class="ms" x="934" y="664">{ success: false, message }</text></g>
+  <g class="node srv hl" id="x-config"><rect class="box" x="920" y="710" width="216" height="72" rx="12"/>
+    <text class="nm" x="934" y="732">.env · config/</text>
+    <text class="sb" x="934" y="751">JWT_SECRET exigé au démarrage</text>
+    <text class="sb" x="934" y="768">PORT 3000 · swagger-jsdoc</text></g>
+  <g class="node srv hl" id="x-tests"><rect class="box" x="920" y="804" width="216" height="52" rx="10"/>
+    <text class="nm" x="934" y="826">Jest + supertest</text>
+    <text class="sb" x="934" y="845">appellent app sans réseau</text></g>
+  <g class="node srv hl" id="x-models"><rect class="box" x="920" y="880" width="216" height="128" rx="12"/>
+    <text class="nm" x="934" y="904">Modèles</text>
+    <text class="sb" x="934" y="922">objets métier, sans SQL</text>
+    <line x1="934" y1="936" x2="1122" y2="936" stroke="#2a3456"/>
+    <text class="ms" x="934" y="958" style="fill:var(--fg)">User</text><text class="sb" x="972" y="958">hash et compare bcrypt</text>
+    <text class="ms" x="934" y="984" style="fill:var(--fg)">Todo</text><text class="sb" x="972" y="984">randomUUID · dates ISO</text></g>
+  <g class="hl" id="u-1"><path class="wire w-mut w-dot" d="M884,906 H916" marker-end="url(#ah-mut)"/></g>
+  <g class="hl" id="u-2"><path class="wire w-mut w-dot" d="M884,982 H916" marker-end="url(#ah-mut)"/></g>
+
+  <!-- ===================== DONNÉES ===================== -->
+  <g class="hl" id="d-user"><path class="wire w-dat" d="M294,1008 V1128" marker-end="url(#ah-dat)"/><text class="ms" x="302" y="1048" style="font-size:10.5px;fill:var(--muted)">db.prepare(sql)</text></g>
+  <g class="hl" id="d-todo"><path class="wire w-dat" d="M769,1008 V1128" marker-end="url(#ah-dat)"/><text class="ms" x="777" y="1048" style="font-size:10.5px;fill:var(--muted)">db.prepare(sql)</text></g>
+
+  <g class="node dat hl" id="t-users">
+    <rect class="box" x="164" y="1130" width="260" height="162" rx="12"/>
+    <path class="tbl-head" d="M176,1131 H412 a11,11 0 0 1 11,11 V1158 H165 V1142 a11,11 0 0 1 11,-11 z"/>
+    <line x1="164" y1="1158" x2="424" y2="1158" stroke="#4b4380"/>
+    <text class="card" x="178" y="1149">users</text><text class="ty" x="410" y="1149">table</text>
+    <text class="ms" x="178" y="1176" style="fill:var(--fg)">id</text><text class="ty" x="410" y="1176">TEXT · PK</text>
+    <text class="ms" x="178" y="1197">username</text><text class="ty" x="410" y="1197">UNIQUE</text>
+    <text class="ms" x="178" y="1218">email</text><text class="ty" x="410" y="1218">UNIQUE</text>
+    <text class="ms" x="178" y="1239">password</text><text class="ty" x="410" y="1239">hash bcrypt</text>
+    <text class="ms" x="178" y="1260">role</text><text class="ty" x="410" y="1260">user | admin</text>
+    <text class="ms" x="178" y="1281">created_at</text><text class="ty" x="410" y="1281">ISO 8601</text>
+  </g>
+  <g class="node dat hl" id="t-todos">
+    <rect class="box" x="610" y="1130" width="272" height="162" rx="12"/>
+    <path class="tbl-head" d="M622,1131 H870 a11,11 0 0 1 11,11 V1158 H611 V1142 a11,11 0 0 1 11,-11 z"/>
+    <line x1="610" y1="1158" x2="882" y2="1158" stroke="#4b4380"/>
+    <text class="card" x="624" y="1149">todos</text><text class="ty" x="868" y="1149">table</text>
+    <text class="ms" x="624" y="1176" style="fill:var(--fg)">id</text><text class="ty" x="868" y="1176">TEXT · PK</text>
+    <text class="ms" x="624" y="1197" style="fill:var(--fg)">user_id</text><text class="ty" x="868" y="1197">FK → users.id</text>
+    <text class="ms" x="624" y="1218">title</text><text class="ty" x="868" y="1218">NOT NULL</text>
+    <text class="ms" x="624" y="1239">completed</text><text class="ty" x="868" y="1239">0 | 1</text>
+    <text class="ms" x="624" y="1260">created_at</text><text class="ty" x="868" y="1260">ISO 8601</text>
+    <text class="ms" x="624" y="1281">updated_at</text><text class="ty" x="868" y="1281">ISO 8601</text>
+  </g>
+  <g class="hl" id="rel">
+    <path class="wire w-dat" d="M424,1172 H517 V1193 H608" marker-end="url(#ah-dat)"/>
+    <text class="ms" x="432" y="1165" style="fill:var(--dat)">1</text>
+    <text class="ms" x="600" y="1186" text-anchor="end" style="fill:var(--dat)">n</text>
+    <text class="ms" x="517" y="1220" text-anchor="middle" style="font-size:10.5px;fill:var(--dat)">ON DELETE CASCADE</text>
+    <text class="sb" x="517" y="1237" text-anchor="middle">index sur user_id</text>
+  </g>
+
+  <g class="node dat store hl" id="x-file"><rect class="box" x="920" y="1130" width="216" height="162" rx="12"/>
+    <text class="nm" x="934" y="1154">Stockage</text>
+    <text class="ms" x="934" y="1178">src/data/app.prod.sqlite</text>
+    <text class="sb" x="934" y="1196">journal WAL · clés étrangères ON</text>
+    <text class="ms" x="934" y="1224">ENVIRONMENT=test</text>
+    <text class="sb" x="934" y="1242">→ base :memory: vierge</text>
+    <text class="sb" x="934" y="1270">DB_PATH remplace le chemin</text></g>
+
+  <!-- ===================== PAQUETS ANIMÉS ===================== -->
+  <path id="tr-todo" d="M1061,548 V572 H769 V1128" fill="none" stroke="none"/>
+  <path id="tr-user" d="M1061,548 V572 H523 V1020 H294 V1128" fill="none" stroke="none"/>
+  <path id="tr-pipe" d="M140,522 H1061" fill="none" stroke="none"/>
+  <circle class="pk pk-cli" r="4"><animateMotion dur="3.6s" repeatCount="indefinite"><mpath href="#w-req-p"/></animateMotion></circle>
+  <circle class="pk pk-srv" r="3.4"><animateMotion dur="3.6s" begin="1.8s" repeatCount="indefinite"><mpath href="#w-res-p"/></animateMotion></circle>
+  <circle class="pk pk-srv" r="3.4"><animateMotion dur="2.8s" begin="0.6s" repeatCount="indefinite"><mpath href="#w-static-p"/></animateMotion></circle>
+  <circle class="pk pk-srv" r="3.6"><animateMotion dur="3.2s" begin="0.3s" repeatCount="indefinite"><mpath href="#tr-pipe"/></animateMotion></circle>
+  <circle class="pk pk-srv" r="3.8"><animateMotion dur="4.6s" begin="1s" repeatCount="indefinite"><mpath href="#tr-todo"/></animateMotion></circle>
+  <circle class="pk pk-dat" r="3.8"><animateMotion dur="5.2s" begin="2.4s" repeatCount="indefinite"><mpath href="#tr-user"/></animateMotion></circle>
+</svg>
+    </div>
+    <figcaption>Le client ne parle au serveur que par HTTP, en JSON, avec le jeton dans l'en-tête. Côté serveur, chaque couche n'appelle que celle du dessous ; seuls les repositories écrivent du SQL. Les gardes répondent elles-mêmes (400, 401, 403) sans atteindre le contrôleur.</figcaption>
+    <div class="legend">
+      <span><i class="sw" style="border-color:var(--cli);background:rgba(99,200,242,.12)"></i>Client</span>
+      <span><i class="sw" style="border-color:var(--srv);background:rgba(243,180,95,.12)"></i>Serveur</span>
+      <span><i class="sw" style="border-color:var(--dat);background:rgba(180,157,255,.12)"></i>Données</span>
+      <span><i class="ln" style="border-color:var(--cli)"></i>requête</span>
+      <span><i class="ln" style="border-color:var(--srv);border-top-style:dashed"></i>réponse</span>
+      <span><i class="ln" style="border-color:#5d6890;border-top-style:dotted"></i>utilise un modèle</span>
+      <span><i class="sw" style="border-color:var(--cli);border-style:dashed"></i>stockage</span>
+    </div>
+  </figure>
+
+  <section class="take" aria-label="Ce qu'il faut retenir">
+    <article class="cli" style="--c:var(--cli)">
+      <h3>Le client guide, le serveur décide</h3>
+      <p><code>session.js</code> redirige pour le confort de l'utilisateur. La vraie protection est côté API : jeton (401), rôle admin relu en base (403), propriété de chaque tâche (404).</p>
+    </article>
+    <article style="--c:var(--srv)">
+      <h3>Chaque couche ne parle qu'à sa voisine</h3>
+      <p>Le contrôleur ne connaît que son service, le service que son repository. Le SQL reste dans les repositories ; les modèles n'importent rien.</p>
+    </article>
+    <article style="--c:var(--dat)">
+      <h3>Une base dans le processus</h3>
+      <p>SQLite tourne dans Node via <code>node:sqlite</code>, sans serveur à installer. Les tests repartent d'une base <code>:memory:</code> vierge à chaque fichier.</p>
+    </article>
+  </section>
+
+  <footer>Établi à partir de src/ et public/ · api-restful-nodejs 1.0.0</footer>
+</div>
+
+<script>
+(() => {
+  // Chaîne globale traversée par tout appel /api/* (static et swagger passent la main).
+  const PIPE_API = ['p-helmet','pa-1','p-cors','pa-2','p-rate','pa-3','p-json','pa-4','p-static','pa-5','p-swagger','pa-6','p-router','bus-trunk'];
+
+  // Chaque étape = [texte, blocs à éclairer]. Le parcours complet = union des étapes.
+  const S = [
+    { key: 'all', label: "Vue d'ensemble", steps: [
+      ["Les points lumineux montrent le trafic : requêtes du navigateur, fichiers statiques, descente dans les couches jusqu'à SQLite.", null],
+      ["Choisissez un parcours à gauche pour isoler son chemin, puis cliquez une étape pour la voir seule.", null],
+      ["Survolez un bloc pour le mettre en avant.", null]
+    ]},
+    { key: 'load', label: 'Ouvrir « Mes tâches »', steps: [
+      ["Le navigateur demande <code>/app/todos.html</code> : la chaîne s'arrête à <code>express.static</code>, qui renvoie le fichier.",
+        ['p-helmet','pa-1','p-cors','pa-2','p-rate','pa-3','p-json','pa-4','p-static','w-static','pg-todos']],
+      ["<code>todos.js</code> lance <code>startSession()</code> ; <code>session.js</code> lit le jeton dans <code>localStorage</code>.",
+        ['pg-todos','cd-4','c-trunk','md-session','m-session','ca-sess-api','m-api','ca-api-store','m-storage']],
+      ["<code>api.js</code> envoie <code>GET /api/users/profile</code> avec <code>Authorization: Bearer &lt;jwt&gt;</code>.",
+        ['m-api','w-req',...PIPE_API,'bus-B','drop-B','r-users']],
+      ["La garde JWT vérifie la signature et que l'utilisateur existe encore en base.",
+        ['r-users','a-B1','g-b-jwt','repo-user','d-user','t-users']],
+      ["<code>userController</code> → <code>userService</code> → <code>UserRepository</code> lisent la ligne <code>users</code> et renvoient le profil.",
+        ['a-B2','c-user','a-B3','s-user','a-B4','repo-user','d-user','t-users','w-res','m-api']],
+      ["Pas de jeton, ou réponse 401 ? <code>session.js</code> renvoie vers <code>/auth/login?reason=expired</code>.",
+        ['g-b-jwt','w-res','m-api','ca-sess-api','m-session','m-storage','pg-login']]
+    ]},
+    { key: 'login', label: 'Se connecter', steps: [
+      ["<code>login.js</code> envoie <code>POST /api/auth/login</code> avec email et mot de passe, sans jeton.",
+        ['pg-login','cd-2','c-trunk','md-api','m-api','w-req']],
+      ["La chaîne globale s'applique, dont la limite de 100 requêtes par 15 minutes et par IP.",
+        ['w-req',...PIPE_API]],
+      ["<code>express-validator</code> contrôle les champs : en cas d'erreur, réponse 400 avec la liste des messages.",
+        ['bus-trunk','bus-B','bus-A','drop-A','r-auth','a-A1','g-a-val','w-res']],
+      ["<code>authService</code> retrouve l'utilisateur via <code>UserRepository</code> et compare le mot de passe au hash bcrypt.",
+        ['a-A2','c-auth','a-A3','s-auth','a-A4','repo-user','d-user','t-users','u-1','x-models']],
+      ["Si c'est bon, <code>jwt.sign</code> crée un jeton valable 24 h, signé avec <code>JWT_SECRET</code>.",
+        ['s-auth','x-config']],
+      ["<code>api.js</code> range le jeton dans <code>localStorage</code> et la page part vers <code>/app/todos</code>.",
+        ['w-res','m-api','ca-api-store','m-storage','pg-todos']]
+    ]},
+    { key: 'create', label: 'Ajouter une tâche', steps: [
+      ["<code>todos.js</code> appelle <code>api('/api/todos', { method: 'POST', auth: true })</code>.",
+        ['pg-todos','cd-4','c-trunk','md-api','m-api','ca-api-store','m-storage','w-req']],
+      ["<code>router.use(auth)</code> : la garde JWT protège toutes les routes <code>/api/todos</code> d'un coup.",
+        ['w-req',...PIPE_API,'drop-C','r-todos','a-C1','g-c-jwt']],
+      ["<code>express-validator</code> vérifie le titre ; sinon 400.",
+        ['g-c-val']],
+      ["<code>todoService</code> crée un <code>Todo</code> (identifiant <code>randomUUID</code>, dates) au nom de l'utilisateur du jeton.",
+        ['a-C2','c-todo','a-C3','s-todo','u-1','x-models']],
+      ["<code>TodoRepository</code> exécute <code>INSERT … ON CONFLICT DO UPDATE</code> dans la table <code>todos</code>.",
+        ['a-C4','repo-todo','d-todo','t-todos']],
+      ["Réponse <code>201 { success: true, data }</code> : la liste se met à jour sans recharger la page.",
+        ['c-todo','w-res','m-api','pg-todos']]
+    ]},
+    { key: 'owner', label: "Viser la tâche d'un autre", steps: [
+      ["Un client envoie <code>PUT /api/todos/:id</code> avec l'identifiant d'une tâche qui ne lui appartient pas.",
+        ['m-api','w-req',...PIPE_API,'drop-C','r-todos']],
+      ["Son jeton est valide : la garde JWT le laisse passer.",
+        ['a-C1','g-c-jwt','g-c-val']],
+      ["<code>todoService</code> charge la tâche et compare <code>todo.userId</code> à l'utilisateur du jeton.",
+        ['a-C2','c-todo','a-C3','s-todo','a-C4','repo-todo','d-todo','t-todos']],
+      ["Différent ? Réponse 404 « Tâche non trouvée » : l'API ne révèle même pas que la tâche existe.",
+        ['s-todo','c-todo','w-res','m-api']]
+    ]},
+    { key: 'admin', label: 'Accès admin refusé', steps: [
+      ["Côté page, <code>startSession({ adminOnly: true })</code> renvoie un non-admin vers ses tâches.",
+        ['pg-admin','cd-6','c-trunk','md-session','m-session','pg-todos']],
+      ["Mais l'API se protège seule : <code>GET /api/users</code> passe la garde JWT, puis la garde admin.",
+        ['m-session','ca-sess-api','m-api','w-req',...PIPE_API,'bus-B','drop-B','r-users','a-B1','g-b-jwt','g-b-admin']],
+      ["<code>adminMiddleware</code> relit l'utilisateur en base : si son rôle n'est pas <code>admin</code>, réponse 403.",
+        ['g-b-admin','repo-user','d-user','t-users','w-res','m-api']],
+      ["Le contrôleur n'est jamais appelé.",
+        ['g-b-admin','w-res']]
+    ]}
+  ];
+
+  const svg = document.getElementById('arch');
+  const hls = Array.from(svg.querySelectorAll('.hl'));
+  const paths = document.getElementById('paths');
+  const stepsBox = document.querySelector('.steps');
+  const stepsEl = document.getElementById('steps');
+  const titleEl = document.getElementById('stepsTitle');
+  const hintEl = document.getElementById('hint');
+
+  let current = null;
+  let activeStep = -1;
+
+  // Éclaire une liste d'ids (null = tout normal), avec un léger décalage dans l'ordre donné.
+  function light(ids, stagger) {
+    if (!ids) {
+      svg.classList.remove('focus');
+      hls.forEach(el => { el.classList.remove('on'); el.style.transitionDelay = '0ms'; });
+      return;
+    }
+    const order = new Map();
+    ids.forEach(id => { if (!order.has(id)) order.set(id, order.size); });
+    svg.classList.add('focus');
+    hls.forEach(el => {
+      const i = order.get(el.id);
+      el.classList.toggle('on', i !== undefined);
+      el.style.transitionDelay = i !== undefined ? (i * stagger) + 'ms' : '0ms';
+    });
+  }
+
+  const wholePath = s => s.steps.some(st => st[1]) ? s.steps.flatMap(st => st[1] || []) : null;
+
+  const hasSteps = s => s.steps.some(st => st[1]);
+
+  function setStep(i) {
+    activeStep = i;
+    stepsBox.classList.toggle('solo', activeStep !== -1);
+    stepsEl.querySelectorAll('button.step').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.i) === activeStep)));
+    light(activeStep === -1 ? wholePath(current) : current.steps[activeStep][1], activeStep === -1 ? 28 : 45);
+    syncDock();
+  }
+
+  // Clic dans le panneau : recliquer l'étape active revient au parcours complet.
+  function showStep(i) { setStep(activeStep === i ? -1 : i); }
+
+  // Étape suivante / précédente, en passant par « tout le parcours » entre la dernière et la première.
+  function stepBy(d) {
+    if (!hasSteps(current)) return;
+    const n = current.steps.length;
+    let i = activeStep + d;
+    if (i >= n) i = -1;
+    if (i < -1) i = n - 1;
+    setStep(i);
+  }
+
+  // ---------- Barre fixe ----------
+  const dock = document.getElementById('dock');
+  const dockSel = document.getElementById('dockPath');
+  const dockSteps = document.getElementById('dockSteps');
+  const dockText = document.getElementById('dockText');
+
+  S.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.key;
+    o.textContent = s.label;
+    dockSel.appendChild(o);
+  });
+  dockSel.addEventListener('change', () => select(S.find(s => s.key === dockSel.value)));
+
+  function buildDock() {
+    dockSel.value = current.key;
+    if (!hasSteps(current)) { dockSteps.innerHTML = ''; return; }
+    let h = '<button type="button" class="nav" data-go="-1" aria-label="Étape précédente">←</button>' +
+            '<button type="button" data-i="-1" aria-label="Tout le parcours">Tout</button>';
+    current.steps.forEach((_, i) => { h += `<button type="button" data-i="${i}" aria-label="Étape ${i + 1}">${i + 1}</button>`; });
+    h += '<button type="button" class="nav" data-go="1" aria-label="Étape suivante">→</button>';
+    dockSteps.innerHTML = h;
+  }
+
+  dockSteps.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.go) stepBy(Number(b.dataset.go));
+    else setStep(Number(b.dataset.i));
+  });
+
+  function syncDock() {
+    dockSteps.querySelectorAll('button[data-i]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.i) === activeStep)));
+    const n = current.steps.length;
+    dockText.innerHTML = !hasSteps(current)
+      ? 'Choisissez un parcours pour le rejouer étape par étape.'
+      : activeStep === -1
+        ? `<strong>${current.label}</strong> · parcours complet, ${n} étapes`
+        : `<strong>${activeStep + 1}.</strong> ${current.steps[activeStep][0]}`;
+  }
+
+  // La barre apparaît dès que le haut du panneau « Parcours » passe au-dessus de l'écran.
+  const tour = document.querySelector('.tour');
+  let ticking = false;
+  function updateDock() {
+    ticking = false;
+    const show = tour.getBoundingClientRect().top < 0;
+    if (show === dock.classList.contains('show')) return;
+    dock.classList.toggle('show', show);
+    dock.inert = !show;
+  }
+  window.addEventListener('scroll', () => {
+    if (!ticking) { ticking = true; requestAnimationFrame(updateDock); }
+  }, { passive: true });
+  window.addEventListener('resize', updateDock);
+  updateDock();
+
+  // Flèches ← → du clavier quand la barre est visible.
+  document.addEventListener('keydown', e => {
+    if (!dock.classList.contains('show') || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest && e.target.closest('select, input, textarea')) return;
+    if (e.key === 'ArrowRight') { stepBy(1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { stepBy(-1); e.preventDefault(); }
+  });
+
+  function select(s) {
+    current = s;
+    activeStep = -1;
+    stepsBox.classList.remove('solo');
+    paths.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === s.key)));
+    titleEl.textContent = s.label;
+    const clickable = s.steps.some(st => st[1]);
+    hintEl.hidden = !clickable;
+    stepsEl.innerHTML = s.steps.map(([t, ids], i) => {
+      const inner = `<span class="n">${i + 1}</span><span class="txt">${t}</span>`;
+      return `<li style="animation-delay:${i * 70}ms">` +
+        (ids ? `<button type="button" class="step" data-i="${i}" aria-pressed="false">${inner}</button>`
+             : `<div class="step">${inner}</div>`) + `</li>`;
+    }).join('');
+    stepsEl.querySelectorAll('button.step').forEach(b => b.addEventListener('click', () => showStep(Number(b.dataset.i))));
+    light(wholePath(s), 28);
+    buildDock();
+    syncDock();
+  }
+
+  S.forEach(s => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'path-' + s.key;
+    b.dataset.key = s.key;
+    b.textContent = s.label;
+    b.addEventListener('click', () => select(s));
+    paths.appendChild(b);
+  });
+  select(S[0]);
+})();
+</script>
+
+</body></html>
